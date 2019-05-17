@@ -19,4 +19,4 @@ Smart Contract: https://etherscan.io/address/0xc4e749db586f50183c6d5c6d3f54f488d
 
 Token Tracker: https://etherscan.io/token/0xc4e749db586f50183c6d5c6d3f54f488d308ec16
 
-Website: Https://ArenaMatch.com
+Website: https://ArenaMatch.com
