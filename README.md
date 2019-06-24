@@ -22,3 +22,7 @@ Smart Contract: https://etherscan.io/address/0x22624e0ecd70538847280cdf8438ada59
 Token Tracker: https://etherscan.io/token/0x22624e0ecd70538847280cdf8438ada5980b9a61
 
 Website: https://ArenaMatch.com
+
+Migration Notice: 
+OLD Contract Address: 0xc4e749db586f50183c6d5c6d3f54f488d308ec16 
+NEW Contract Address: 0x22624e0ecd70538847280cdf8438ada5980b9a61 
