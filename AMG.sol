@@ -400,7 +400,7 @@ contract Pausable is Ownable {
  */
 contract ArenaMatchGold is StandardToken, Burnable, Pausable, Claimable {
 
-  string public constant name = "ArenaMatchGold"; // solium-disable-line uppercase
+  string public constant name = "AMGold Arena Match"; // solium-disable-line uppercase
   string public constant symbol = "AMG"; // solium-disable-line uppercase
   uint8 public constant decimals = 18; // solium-disable-line uppercase
   uint256 public constant INITIAL_SUPPLY = 100000000 * (10 ** uint256(decimals));
