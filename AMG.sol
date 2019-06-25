@@ -69,7 +69,7 @@ library SafeMath {
 contract Burner {
     using SafeMath for uint256;
     uint256 public basePercent = 100;
-    function findOnePercent(uint256 value) public view returns (uint256)  {
+    function findPointFivePercent(uint256 value) public view returns (uint256)  {
         uint256 roundValue = value.ceil(basePercent);
         uint256 onePercent = roundValue.mul(basePercent).div(20000);
         return onePercent;
@@ -103,7 +103,7 @@ contract BasicToken is ERC20Basic, Burner {
     require(_to != address(0));
     require(_value <= balances[msg.sender]);
 
-    uint256 amountBurn = findOnePercent(_value);
+    uint256 amountBurn = findPointFivePercent(_value);
     uint256 amountTransfer = _value.sub(amountBurn);
 
     balances[msg.sender] = balances[msg.sender].sub(amountTransfer);
@@ -151,7 +151,7 @@ contract StandardToken is ERC20, BasicToken {
 
     balances[_from] = balances[_from].sub(_value);
 
-    uint256 amountBurn = findOnePercent(_value);
+    uint256 amountBurn = findPointFivePercent(_value);
     uint256 amountTransfer = _value.sub(amountBurn);
 
     balances[_to] = balances[_to].add(amountTransfer);
