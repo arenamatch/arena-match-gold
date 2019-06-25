@@ -64,14 +64,14 @@ library SafeMath {
 
 /**
   * @title Burner
-  * @dev Used to burn one percent of a transfer each time
+  * @dev Used to burn 0.5 percent of a transfer each time
  */
 contract Burner {
     using SafeMath for uint256;
     uint256 public basePercent = 100;
     function findOnePercent(uint256 value) public view returns (uint256)  {
         uint256 roundValue = value.ceil(basePercent);
-        uint256 onePercent = roundValue.mul(basePercent).div(10000);
+        uint256 onePercent = roundValue.mul(basePercent).div(20000);
         return onePercent;
     }
 }
@@ -400,7 +400,7 @@ contract Pausable is Ownable {
  */
 contract ArenaMatchGold is StandardToken, Burnable, Pausable, Claimable {
 
-  string public constant name = "AMGold Arena Match"; // solium-disable-line uppercase
+  string public constant name = "AMGold"; // solium-disable-line uppercase
   string public constant symbol = "AMG"; // solium-disable-line uppercase
   uint8 public constant decimals = 18; // solium-disable-line uppercase
   uint256 public constant INITIAL_SUPPLY = 100000000 * (10 ** uint256(decimals));
