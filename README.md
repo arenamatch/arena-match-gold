@@ -17,7 +17,7 @@ Supply: 100,000,000
 
 Burn Rate: 0.5% on each transfer 
 
-Stabilizes: Transfers above the 16 decimals (0.00000000000000009) won't burn
+Stabilizes: Transfers below the 16 decimals (0.00000000000000009) won't burn
 
 Smart Contract: 
 
