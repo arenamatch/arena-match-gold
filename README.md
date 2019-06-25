@@ -15,14 +15,16 @@ Decimals: 18
 
 Supply: 100,000,000
 
-Burn Rate: 1% on each transfer 
+Burn Rate: 0.5% on each transfer 
 
-Smart Contract: https://etherscan.io/address/0x22624e0ecd70538847280cdf8438ada5980b9a61
+Stabilizes: Transfers above the 16 decimals (0.00000000000000009) won't burn
 
-Token Tracker: https://etherscan.io/token/0x22624e0ecd70538847280cdf8438ada5980b9a61
+Smart Contract: 
+
+Token Tracker: 
 
 Website: https://ArenaMatch.com
 
 Migration Notice: 
 OLD Contract Address: 0xc4e749db586f50183c6d5c6d3f54f488d308ec16 
-NEW Contract Address: 0x22624e0ecd70538847280cdf8438ada5980b9a61 
+NEW Contract Address: 
