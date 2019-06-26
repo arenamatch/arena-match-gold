@@ -1,10 +1,4 @@
 # Arena-Match-Gold
-Migration Notice
-
-OLD Contract Address: 0xc4e749db586f50183c6d5c6d3f54f488d308ec16 
-
-NEW Contract Address: 0xcbb836780fd33c0164df0071efa49dc2bc7a012d
-
 
 Arena Match Gold (“AMGold” or “AMG”) will serve as hyper-deflationary esports cryptocurrency token used for skill-based betting on popular PC games. AMG is designed as a decentralized ERC20 token on the Ethereum blockchain network for exclusive use with Arena Match products and services. AMGold will serve as a utility token creating a decentralized, community-driven virtual economy. A strict limit of 100,000,000 AMGold will be created, never to be increased.
 
@@ -26,8 +20,8 @@ Burn Rate: 0.5% on each transfer
 
 Stabilizes: Transfers below the 16 decimals (0.00000000000000009) won't burn
 
-Smart Contract: 
+Smart Contract: https://etherscan.io/address/0xcbb836780fd33c0164df0071efa49dc2bc7a012d#contracts 
 
-Token Tracker: 
+Token Tracker: https://etherscan.io/token/0xcbb836780fd33c0164df0071efa49dc2bc7a012d
 
 Website: https://ArenaMatch.com
