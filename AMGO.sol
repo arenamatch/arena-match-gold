@@ -596,7 +596,7 @@ contract AMGOToken is Ownable, GasPump, IERC20 {
 
     // metadata
     string public name = "AMGO - Arena Match Gold";
-    string public constant symbol = "SHUF";
+    string public constant symbol = "AMGO";
     uint8 public constant decimals = 18;
 
     // fee whitelist
