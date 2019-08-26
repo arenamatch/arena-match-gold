@@ -595,8 +595,8 @@ contract AMGOToken is Ownable, GasPump, IERC20 {
     uint256 public constant FEE = 100;
 
     // metadata
-    string public name = "AMGO - Arena Match Gold";
-    string public constant symbol = "AMGO";
+    string public name = "TEST - Arena Match Gold";
+    string public constant symbol = "TEST";
     uint8 public constant decimals = 18;
 
     // fee whitelist
@@ -723,7 +723,7 @@ contract AMGOToken is Ownable, GasPump, IERC20 {
         // initial receive is full value
         uint256 receive = _value;
         uint256 burn = 0;
-        uint256 shuf = 0;
+        uint256 amgo = 0;
 
         // Change sender balance
         _setBalance(_from, balanceFrom.sub(_value));
@@ -732,14 +732,14 @@ contract AMGOToken is Ownable, GasPump, IERC20 {
         // or if sender requested to pay the fee
         // calculate fees
         if (_payFee || !_isWhitelisted(_from, _to)) {
-            // Fee is the same for BURN and SHUF
+            // Fee is the same for BURN and AMGO
             // If we are sending value one
             // give priority to BURN
             burn = _value.divRound(FEE);
-            shuf = _value == 1 ? 0 : burn;
+            amgo = _value == 1 ? 0 : burn;
 
             // Subtract fees from receiver amount
-            receive = receive.sub(burn.add(shuf));
+            receive = receive.sub(burn.add(amgo));
 
             // Burn tokens
             totalSupply = totalSupply.sub(burn);
@@ -749,14 +749,14 @@ contract AMGOToken is Ownable, GasPump, IERC20 {
             // Pick winner pseudo-randomly
             address winner = _pickWinner(_from, _value);
             // Transfer balance to winner
-            _setBalance(winner, _balanceOf(winner).add(shuf));
-            emit Winner(winner, shuf);
-            emit Transfer(_from, winner, shuf);
+            _setBalance(winner, _balanceOf(winner).add(amgo));
+            emit Winner(winner, amgo);
+            emit Transfer(_from, winner, amgo);
         }
 
         // Sanity checks
         // no tokens where created
-        assert(burn.add(shuf).add(receive) == _value);
+        assert(burn.add(amgo).add(receive) == _value);
 
         // Add tokens to receiver
         _setBalance(_to, _balanceOf(_to).add(receive));
