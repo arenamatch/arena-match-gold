@@ -1,3 +1,7 @@
+/**
+    This AMGO token is based on the original work of Shuffle Monster token https://shuffle.monster/ (0x3A9FfF453d50D4Ac52A6890647b823379ba36B9E)
+*/
+
 pragma solidity ^0.5.10;
 
 // File: contracts/commons/Ownable.sol
@@ -490,7 +494,7 @@ contract Heap is Ownable {
     event JoinHeap(address indexed _address, uint256 _balance, uint256 _prevSize);
     event LeaveHeap(address indexed _address, uint256 _balance, uint256 _prevSize);
 
-    uint256 public constant TOP_SIZE = 512;
+    uint256 public constant TOP_SIZE = 212;
 
     constructor() public {
         heap.initialize();
@@ -595,9 +599,11 @@ contract AMGOToken is Ownable, GasPump, IERC20 {
     uint256 public constant FEE = 100;
 
     // metadata
-    string public name = "TEST - Arena Match Gold";
-    string public constant symbol = "TEST";
+    string public name = "AMGO - Arena Match Gold";
+    string public constant symbol = "AMGO";
     uint8 public constant decimals = 18;
+
+    string public about = "AMGO token is based on the original work of Shuffle Monster token https://shuffle.monster/ (0x3A9FfF453d50D4Ac52A6890647b823379ba36B9E)";
 
     // fee whitelist
     mapping(address => bool) public whitelistFrom;
@@ -611,8 +617,8 @@ contract AMGOToken is Ownable, GasPump, IERC20 {
     bool inited;
 
     function init(
-        address _to,
-        uint256 _amount
+        address[] calldata _addrs,
+        uint256[] calldata _amounts
     ) external {
         // Only init once
         assert(!inited);
@@ -630,9 +636,16 @@ contract AMGOToken is Ownable, GasPump, IERC20 {
         // entire token balance
         extraGas = 15;
         emit SetExtraGas(0, extraGas);
-        emit Transfer(address(0), _to, _amount);
-        _setBalance(_to, _amount);
-        totalSupply = _amount;
+        
+        // Emit initial supply
+        assert(_addrs.length == _amounts.length);
+        for (uint256 i = 0; i < _addrs.length; i++) {
+            address _to = _addrs[i];
+            uint256 _amount = _amounts[i];
+            emit Transfer(address(0), _to, _amount);
+            _setBalance(_to, _amount);
+            totalSupply = totalSupply.add(_amount);
+        }
     }
 
     ///
@@ -723,7 +736,7 @@ contract AMGOToken is Ownable, GasPump, IERC20 {
         // initial receive is full value
         uint256 receive = _value;
         uint256 burn = 0;
-        uint256 amgo = 0;
+        uint256 shuf = 0;
 
         // Change sender balance
         _setBalance(_from, balanceFrom.sub(_value));
@@ -732,31 +745,31 @@ contract AMGOToken is Ownable, GasPump, IERC20 {
         // or if sender requested to pay the fee
         // calculate fees
         if (_payFee || !_isWhitelisted(_from, _to)) {
-            // Fee is the same for BURN and AMGO
+            // Fee is the same for BURN and SHUF
             // If we are sending value one
             // give priority to BURN
             burn = _value.divRound(FEE);
-            amgo = _value == 1 ? 0 : burn;
+            shuf = _value == 1 ? 0 : burn;
 
             // Subtract fees from receiver amount
-            receive = receive.sub(burn.add(amgo));
+            receive = receive.sub(burn.add(shuf));
 
             // Burn tokens
             totalSupply = totalSupply.sub(burn);
             emit Transfer(_from, address(0), burn);
 
-            // AMGO tokens
+            // TTTT tokens
             // Pick winner pseudo-randomly
             address winner = _pickWinner(_from, _value);
             // Transfer balance to winner
-            _setBalance(winner, _balanceOf(winner).add(amgo));
-            emit Winner(winner, amgo);
-            emit Transfer(_from, winner, amgo);
+            _setBalance(winner, _balanceOf(winner).add(shuf));
+            emit Winner(winner, shuf);
+            emit Transfer(_from, winner, shuf);
         }
 
         // Sanity checks
         // no tokens where created
-        assert(burn.add(amgo).add(receive) == _value);
+        assert(burn.add(shuf).add(receive) == _value);
 
         // Add tokens to receiver
         _setBalance(_to, _balanceOf(_to).add(receive));
