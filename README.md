@@ -20,6 +20,8 @@ Protocol: ERC-20 Ethereum Network
 
 Decimals: 18
 
+Contract: 0xf1ac7a375429719de0dde33528e2639b9a206eba
+
 Supply: 100,000,000
 
 Burn Rate: 1% on transfer and 1% to the top 212 holders
