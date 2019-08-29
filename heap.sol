@@ -1,4 +1,10 @@
+/**
+    AMGO token is based on the original work of Shuffle Monster token https://shuffle.monster/ (0x3A9FfF453d50D4Ac52A6890647b823379ba36B9E)
+*/
+
 pragma solidity ^0.5.10;
+
+// File: contracts/commons/Ownable.sol
 
 
 contract Ownable {
@@ -20,6 +26,235 @@ contract Ownable {
         emit TransferOwnership(owner, _owner);
         owner = _owner;
     }
+}
+
+// File: contracts/commons/StorageUnit.sol
+
+pragma solidity ^0.5.10;
+
+
+contract StorageUnit {
+    address private owner;
+    mapping(bytes32 => bytes32) private store;
+
+    constructor() public {
+        owner = msg.sender;
+    }
+
+    function write(bytes32 _key, bytes32 _value) external {
+        /* solium-disable-next-line */
+        require(msg.sender == owner);
+        store[_key] = _value;
+    }
+
+    function read(bytes32 _key) external view returns (bytes32) {
+        return store[_key];
+    }
+}
+
+// File: contracts/utils/IsContract.sol
+
+pragma solidity ^0.5.10;
+
+
+library IsContract {
+    function isContract(address _addr) internal view returns (bool) {
+        bytes32 codehash;
+        /* solium-disable-next-line */
+        assembly { codehash := extcodehash(_addr) }
+        return codehash != bytes32(0) && codehash != bytes32(0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470);
+    }
+}
+
+// File: contracts/utils/DistributedStorage.sol
+
+pragma solidity ^0.5.10;
+
+
+
+
+library DistributedStorage {
+    function contractSlot(bytes32 _struct) private view returns (address) {
+        return address(
+            uint256(
+                keccak256(
+                    abi.encodePacked(
+                        byte(0xff),
+                        address(this),
+                        _struct,
+                        keccak256(type(StorageUnit).creationCode)
+                    )
+                )
+            )
+        );
+    }
+
+    function deploy(bytes32 _struct) private {
+        bytes memory slotcode = type(StorageUnit).creationCode;
+        /* solium-disable-next-line */
+        assembly{ pop(create2(0, add(slotcode, 0x20), mload(slotcode), _struct)) }
+    }
+
+    function write(
+        bytes32 _struct,
+        bytes32 _key,
+        bytes32 _value
+    ) internal {
+        StorageUnit store = StorageUnit(contractSlot(_struct));
+        if (!IsContract.isContract(address(store))) {
+            deploy(_struct);
+        }
+
+        /* solium-disable-next-line */
+        (bool success, ) = address(store).call(
+            abi.encodeWithSelector(
+                store.write.selector,
+                _key,
+                _value
+            )
+        );
+
+        require(success, "error writing storage");
+    }
+
+    function read(
+        bytes32 _struct,
+        bytes32 _key
+    ) internal view returns (bytes32) {
+        StorageUnit store = StorageUnit(contractSlot(_struct));
+        if (!IsContract.isContract(address(store))) {
+            return bytes32(0);
+        }
+
+        /* solium-disable-next-line */
+        (bool success, bytes memory data) = address(store).staticcall(
+            abi.encodeWithSelector(
+                store.read.selector,
+                _key
+            )
+        );
+
+        require(success, "error reading storage");
+        return abi.decode(data, (bytes32));
+    }
+}
+
+// File: contracts/utils/SafeMath.sol
+
+pragma solidity ^0.5.10;
+
+
+library SafeMath {
+    function add(uint256 x, uint256 y) internal pure returns (uint256) {
+        uint256 z = x + y;
+        require(z >= x, "Add overflow");
+        return z;
+    }
+
+    function sub(uint256 x, uint256 y) internal pure returns (uint256) {
+        require(x >= y, "Sub underflow");
+        return x - y;
+    }
+
+    function mult(uint256 x, uint256 y) internal pure returns (uint256) {
+        if (x == 0) {
+            return 0;
+        }
+
+        uint256 z = x * y;
+        require(z / x == y, "Mult overflow");
+        return z;
+    }
+
+    function div(uint256 x, uint256 y) internal pure returns (uint256) {
+        require(y != 0, "Div by zero");
+        return x / y;
+    }
+
+    function divRound(uint256 x, uint256 y) internal pure returns (uint256) {
+        require(y != 0, "Div by zero");
+        uint256 r = x / y;
+        if (x % y != 0) {
+            r = r + 1;
+        }
+
+        return r;
+    }
+}
+
+// File: contracts/utils/Math.sol
+
+pragma solidity ^0.5.10;
+
+
+library Math {
+    function orderOfMagnitude(uint256 input) internal pure returns (uint256){
+        uint256 counter = uint(-1);
+        uint256 temp = input;
+
+        do {
+            temp /= 10;
+            counter++;
+        } while (temp != 0);
+
+        return counter;
+    }
+
+    function min(uint256 _a, uint256 _b) internal pure returns (uint256) {
+        if (_a < _b) {
+            return _a;
+        } else {
+            return _b;
+        }
+    }
+
+    function max(uint256 _a, uint256 _b) internal pure returns (uint256) {
+        if (_a > _b) {
+            return _a;
+        } else {
+            return _b;
+        }
+    }
+}
+
+// File: contracts/utils/GasPump.sol
+
+pragma solidity ^0.5.10;
+
+
+contract GasPump {
+    bytes32 private stub;
+
+    modifier requestGas(uint256 _factor) {
+        if (tx.gasprice == 0 || gasleft() > block.gaslimit) {
+            uint256 startgas = gasleft();
+            _;
+            uint256 delta = startgas - gasleft();
+            uint256 target = (delta * _factor) / 100;
+            startgas = gasleft();
+            while (startgas - gasleft() < target) {
+                // Burn gas
+                stub = keccak256(abi.encodePacked(stub));
+            }
+        } else {
+            _;
+        }
+    }
+}
+
+// File: contracts/interfaces/IERC20.sol
+
+pragma solidity ^0.5.10;
+
+
+interface IERC20 {
+    event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+    function transfer(address _to, uint _value) external returns (bool success);
+    function transferFrom(address _from, address _to, uint256 _value) external returns (bool success);
+    function allowance(address _owner, address _spender) external view returns (uint256 remaining);
+    function approve(address _spender, uint256 _value) external returns (bool success);
+    function balanceOf(address _owner) external view returns (uint256 balance);
 }
 
 // File: contracts/commons/AddressMinHeap.sol
@@ -259,7 +494,7 @@ contract Heap is Ownable {
     event JoinHeap(address indexed _address, uint256 _balance, uint256 _prevSize);
     event LeaveHeap(address indexed _address, uint256 _balance, uint256 _prevSize);
 
-    uint256 public constant TOP_SIZE = 112;
+    uint256 public constant TOP_SIZE = 212;
 
     constructor() public {
         heap.initialize();
@@ -328,5 +563,311 @@ contract Heap is Ownable {
                 emit JoinHeap(_addr, _new, _size);
             }
         }
+    }
+}
+
+// File: contracts/AMGOToken.sol
+
+pragma solidity ^0.5.10;
+
+
+
+
+
+
+
+
+contract AMGOToken is Ownable, GasPump, IERC20 {
+    using DistributedStorage for bytes32;
+    using SafeMath for uint256;
+
+    // AMGO events
+    event Winner(address indexed _addr, uint256 _value);
+
+    // Managment events
+    event SetName(string _prev, string _new);
+    event SetExtraGas(uint256 _prev, uint256 _new);
+    event SetHeap(address _prev, address _new);
+    event WhitelistFrom(address _addr, bool _whitelisted);
+    event WhitelistTo(address _addr, bool _whitelisted);
+
+    uint256 public totalSupply;
+
+    bytes32 private constant BALANCE_KEY = keccak256("balance");
+
+    // game
+    uint256 public constant FEE = 100;
+
+    // metadata
+    string public name = "AMGO - Arena Match Gold";
+    string public constant symbol = "AMGO";
+    uint8 public constant decimals = 18;
+
+    string public about = "AMGO token is based on the original work of Shuffle Monster token https://shuffle.monster/ (0x3A9FfF453d50D4Ac52A6890647b823379ba36B9E)";
+
+    // fee whitelist
+    mapping(address => bool) public whitelistFrom;
+    mapping(address => bool) public whitelistTo;
+
+    // heap
+    Heap public heap;
+
+    // internal
+    uint256 public extraGas;
+    bool inited;
+
+    function init(
+        address[] calldata _addrs,
+        uint256[] calldata _amounts
+    ) external {
+        // Only init once
+        assert(!inited);
+        inited = true;
+
+        // Sanity checks
+        assert(totalSupply == 0);
+        assert(address(heap) == address(0));
+
+        // Create Heap
+        heap = new Heap();
+        emit SetHeap(address(0), address(heap));
+
+        // Init contract variables and mint
+        // entire token balance
+        extraGas = 15;
+        emit SetExtraGas(0, extraGas);
+        
+        // Emit initial supply
+        assert(_addrs.length == _amounts.length);
+        for (uint256 i = 0; i < _addrs.length; i++) {
+            address _to = _addrs[i];
+            uint256 _amount = _amounts[i];
+            emit Transfer(address(0), _to, _amount);
+            _setBalance(_to, _amount);
+            totalSupply = totalSupply.add(_amount);
+        }
+    }
+
+    ///
+    // Storage access functions
+    ///
+
+    // Getters
+
+    function _toKey(address a) internal pure returns (bytes32) {
+        return bytes32(uint256(a));
+    }
+
+    function _balanceOf(address _addr) internal view returns (uint256) {
+        return uint256(_toKey(_addr).read(BALANCE_KEY));
+    }
+
+    function _allowance(address _addr, address _spender) internal view returns (uint256) {
+        return uint256(_toKey(_addr).read(keccak256(abi.encodePacked("allowance", _spender))));
+    }
+
+    function _nonce(address _addr, uint256 _cat) internal view returns (uint256) {
+        return uint256(_toKey(_addr).read(keccak256(abi.encodePacked("nonce", _cat))));
+    }
+
+    // Setters
+
+    function _setAllowance(address _addr, address _spender, uint256 _value) internal {
+        _toKey(_addr).write(keccak256(abi.encodePacked("allowance", _spender)), bytes32(_value));
+    }
+
+    function _setNonce(address _addr, uint256 _cat, uint256 _value) internal {
+        _toKey(_addr).write(keccak256(abi.encodePacked("nonce", _cat)), bytes32(_value));
+    }
+
+    function _setBalance(address _addr, uint256 _balance) internal {
+        _toKey(_addr).write(BALANCE_KEY, bytes32(_balance));
+        heap.update(_addr, _balance);
+    }
+
+    ///
+    // Internal methods
+    ///
+
+    function _isWhitelisted(address _from, address _to) internal view returns (bool) {
+        return whitelistFrom[_from]||whitelistTo[_to];
+    }
+
+    function _random(address _s1, uint256 _s2, uint256 _s3, uint256 _max) internal pure returns (uint256) {
+        uint256 rand = uint256(keccak256(abi.encodePacked(_s1, _s2, _s3)));
+        return rand % (_max + 1);
+    }
+
+    function _pickWinner(address _from, uint256 _value) internal returns (address winner) {
+        // Get order of magnitude of the tx
+        uint256 magnitude = Math.orderOfMagnitude(_value);
+        // Pull nonce for a given order of magnitude
+        uint256 nonce = _nonce(_from, magnitude);
+        _setNonce(_from, magnitude, nonce + 1);
+        // pick entry from heap
+        winner = heap.addressAt(_random(_from, nonce, magnitude, heap.size() - 1));
+    }
+
+    function _transferFrom(address _operator, address _from, address _to, uint256 _value, bool _payFee) internal {
+        // If transfer amount is zero
+        // emit event and stop execution
+        if (_value == 0) {
+            emit Transfer(_from, _to, 0);
+            return;
+        }
+
+        // Load sender balance
+        uint256 balanceFrom = _balanceOf(_from);
+        require(balanceFrom >= _value, "balance not enough");
+
+        // Check if operator is sender
+        if (_from != _operator) {
+            // If not, validate allowance
+            uint256 allowanceFrom = _allowance(_from, _operator);
+            // If allowance is not 2 ** 256 - 1, consume allowance
+            if (allowanceFrom != uint(-1)) {
+                // Check allowance and save new one
+                require(allowanceFrom >= _value, "allowance not enough");
+                _setAllowance(_from, _operator, allowanceFrom.sub(_value));
+            }
+        }
+
+        // Calculate receiver balance
+        // initial receive is full value
+        uint256 receive = _value;
+        uint256 burn = 0;
+        uint256 shuf = 0;
+
+        // Change sender balance
+        _setBalance(_from, balanceFrom.sub(_value));
+
+        // If the transaction is not whitelisted
+        // or if sender requested to pay the fee
+        // calculate fees
+        if (_payFee || !_isWhitelisted(_from, _to)) {
+            // Fee is the same for BURN and SHUF
+            // If we are sending value one
+            // give priority to BURN
+            burn = _value.divRound(FEE);
+            shuf = _value == 1 ? 0 : burn;
+
+            // Subtract fees from receiver amount
+            receive = receive.sub(burn.add(shuf));
+
+            // Burn tokens
+            totalSupply = totalSupply.sub(burn);
+            emit Transfer(_from, address(0), burn);
+
+            // AMGO tokens
+            // Pick winner pseudo-randomly
+            address winner = _pickWinner(_from, _value);
+            // Transfer balance to winner
+            _setBalance(winner, _balanceOf(winner).add(shuf));
+            emit Winner(winner, shuf);
+            emit Transfer(_from, winner, shuf);
+        }
+
+        // Sanity checks
+        // no tokens where created
+        assert(burn.add(shuf).add(receive) == _value);
+
+        // Add tokens to receiver
+        _setBalance(_to, _balanceOf(_to).add(receive));
+        emit Transfer(_from, _to, receive);
+    }
+
+    ///
+    // Managment
+    ///
+
+    function setWhitelistedTo(address _addr, bool _whitelisted) external onlyOwner {
+        emit WhitelistTo(_addr, _whitelisted);
+        whitelistTo[_addr] = _whitelisted;
+    }
+
+    function setWhitelistedFrom(address _addr, bool _whitelisted) external onlyOwner {
+        emit WhitelistFrom(_addr, _whitelisted);
+        whitelistFrom[_addr] = _whitelisted;
+    }
+
+    function setName(string calldata _name) external onlyOwner {
+        emit SetName(name, _name);
+        name = _name;
+    }
+
+    function setExtraGas(uint256 _gas) external onlyOwner {
+        emit SetExtraGas(extraGas, _gas);
+        extraGas = _gas;
+    }
+
+    function setHeap(Heap _heap) external onlyOwner {
+        emit SetHeap(address(heap), address(_heap));
+        heap = _heap;
+    }
+
+    /////
+    // Heap methods
+    /////
+
+    function topSize() external view returns (uint256) {
+        return heap.topSize();
+    }
+
+    function heapSize() external view returns (uint256) {
+        return heap.size();
+    }
+
+    function heapEntry(uint256 _i) external view returns (address, uint256) {
+        return heap.entry(_i);
+    }
+
+    function heapTop() external view returns (address, uint256) {
+        return heap.top();
+    }
+
+    function heapIndex(address _addr) external view returns (uint256) {
+        return heap.indexOf(_addr);
+    }
+
+    function getNonce(address _addr, uint256 _cat) external view returns (uint256) {
+        return _nonce(_addr, _cat);
+    }
+
+    /////
+    // ERC20
+    /////
+
+    function balanceOf(address _addr) external view returns (uint256) {
+        return _balanceOf(_addr);
+    }
+
+    function allowance(address _addr, address _spender) external view returns (uint256) {
+        return _allowance(_addr, _spender);
+    }
+
+    function approve(address _spender, uint256 _value) external returns (bool) {
+        emit Approval(msg.sender, _spender, _value);
+        _setAllowance(msg.sender, _spender, _value);
+        return true;
+    }
+
+    function transfer(address _to, uint256 _value) external requestGas(extraGas) returns (bool) {
+        _transferFrom(msg.sender, msg.sender, _to, _value, false);
+        return true;
+    }
+
+    function transferWithFee(address _to, uint256 _value) external requestGas(extraGas) returns (bool) {
+        _transferFrom(msg.sender, msg.sender, _to, _value, true);
+        return true;
+    }
+
+    function transferFrom(address _from, address _to, uint256 _value) external requestGas(extraGas) returns (bool) {
+        _transferFrom(msg.sender, _from, _to, _value, false);
+        return true;
+    }
+
+    function transferFromWithFee(address _from, address _to, uint256 _value) external requestGas(extraGas) returns (bool) {
+        _transferFrom(msg.sender, _from, _to, _value, true);
+        return true;
     }
 }
